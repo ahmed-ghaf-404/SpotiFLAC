@@ -4,10 +4,9 @@
 
 <div align="center">
 
-Get Spotify tracks in true FLAC from Tidal/Deezer — no account required.
-<br><br>
+Get Spotify tracks in true FLAC from Tidal, Qobuz & Amazon Music — no account required.
 
-![Windows](https://img.shields.io/badge/Windows-10%2B-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-10%2B-0078D6?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgMjAgMjAiPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTIwIDEwLjg3M1YyMEw4LjQ3OSAxOC41MzdsLjAwMS03LjY2NEgyMFptLTEzLjEyIDBsLS4wMDEgNy40NjFMMCAxNy40NjF2LTYuNTg4aDYuODhaTTIwIDkuMjczSDguNDhsLS4wMDEtNy44MUwyMCAwdjkuMjczWk02Ljg3OSAxLjY2NmwuMDAxIDcuNjA3SDBWMi41MzlsNi44NzktLjg3M1oiLz48L3N2Zz4=)
 ![macOS](https://img.shields.io/badge/macOS-10.13%2B-000000?style=for-the-badge&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-Any-FCC624?style=for-the-badge&logo=linux&logoColor=white)
 
@@ -17,12 +16,12 @@ Get Spotify tracks in true FLAC from Tidal/Deezer — no account required.
 
 ## Screenshot
 
-![Image](https://github.com/user-attachments/assets/0e1338a6-244d-4e6b-9224-fd9549a585ed)
+![Image](https://github.com/user-attachments/assets/afe01529-bcf0-4486-8792-62af26adafee)
 
-## Lossless Audio Check
+## Other project
 
-![image](https://github.com/user-attachments/assets/d63b422d-0ea3-4307-850f-96c99d7eaa9a)
+### [SpotiDownloader](https://github.com/afkarxyz/SpotiDownloader) 
 
-![image](https://github.com/user-attachments/assets/7649e6e1-d5d1-49b3-b83f-965d44651d05)
+Get Spotify tracks in MP3 and FLAC via the spotidownloader.com API
 
-### [Download](https://github.com/afkarxyz/SpotiFLAC/releases/download/v0/FLAC-Checker.zip)
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/afkarxyz)

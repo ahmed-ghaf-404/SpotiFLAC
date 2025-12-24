@@ -2,18 +2,13 @@ name: Build Multi-Platform
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.25.4'
-  NODE_VERSION: '20'
+  GO_VERSION: '1.25.5'
+  NODE_VERSION: '24'
 
 jobs:
   build-windows:
@@ -55,10 +50,11 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
+        continue-on-error: true
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -71,19 +67,27 @@ jobs:
           pnpm install
           pnpm run generate-icon
 
+      - name: Install UPX
+        run: |
+          choco install upx -y
+
       - name: Build application
         run: wails build -platform windows/amd64
+
+      - name: Compress with UPX
+        run: |
+          upx --best --lzma "build\bin\SpotiFLAC.exe"
 
       - name: Prepare artifacts
         run: |
           mkdir -p dist
-          Copy-Item -Path "build\bin\SpotiFLAC.exe" -Destination "dist\SpotiFLAC-${{ steps.version.outputs.version }}.exe"
+          Copy-Item -Path "build\bin\SpotiFLAC.exe" -Destination "dist\SpotiFLAC.exe"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable
-          path: dist/SpotiFLAC-${{ steps.version.outputs.version }}.exe
+          path: dist/SpotiFLAC.exe
           retention-days: 7
 
   build-macos:
@@ -123,10 +127,11 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
+        continue-on-error: true
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -157,16 +162,16 @@ jobs:
             --icon "SpotiFLAC.app" 175 120 \
             --hide-extension "SpotiFLAC.app" \
             --app-drop-link 425 120 \
-            "dist/SpotiFLAC-${{ steps.version.outputs.version }}.dmg" \
+            "dist/SpotiFLAC.dmg" \
             "build/bin/SpotiFLAC.app" || \
           # Fallback to hdiutil if create-dmg fails
-          hdiutil create -volname SpotiFLAC -srcfolder build/bin/SpotiFLAC.app -ov -format UDZO dist/SpotiFLAC-${{ steps.version.outputs.version }}.dmg
+          hdiutil create -volname SpotiFLAC -srcfolder build/bin/SpotiFLAC.app -ov -format UDZO dist/SpotiFLAC.dmg
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-portable
-          path: dist/SpotiFLAC-${{ steps.version.outputs.version }}.dmg
+          path: dist/SpotiFLAC.dmg
           retention-days: 7
 
   build-linux:
@@ -206,17 +211,18 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
+        continue-on-error: true
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libfuse2 imagemagick
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libfuse2 imagemagick upx-ucl
 
           # Create symlink for webkit2gtk-4.0 -> webkit2gtk-4.1 (Ubuntu 24.04 compatibility)
           sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
@@ -233,10 +239,25 @@ jobs:
       - name: Build application
         run: wails build -platform linux/amd64
 
-      - name: Download appimagetool
+      - name: Compress with UPX
         run: |
-          wget -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool
+          upx --best --lzma build/bin/SpotiFLAC
+
+      - name: Cache appimagetool
+        id: cache-appimagetool
+        uses: actions/cache@v4
+        with:
+          path: appimagetool
+          key: appimagetool-x86_64-v1
+
+      - name: Download appimagetool
+        if: steps.cache-appimagetool.outputs.cache-hit != 'true'
+        run: |
+          wget --timeout=30 --tries=5 --retry-connrefused --waitretry=5 -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage || \
+          wget --timeout=30 --tries=5 --retry-connrefused --waitretry=5 -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
+
+      - name: Make appimagetool executable
+        run: chmod +x appimagetool
 
       - name: Create AppImage
         run: |
@@ -245,36 +266,35 @@ jobs:
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
 
           # Copy binary
-          cp build/bin/SpotiFLAC AppDir/usr/bin/spotiflac
+          cp build/bin/SpotiFLAC AppDir/usr/bin/
 
           # Create desktop file
           cat > AppDir/spotiflac.desktop << 'EOF'
           [Desktop Entry]
           Name=SpotiFLAC
-          Exec=spotiflac
+          Exec=SpotiFLAC
           Icon=spotiflac
           Type=Application
           Categories=Audio;AudioVideo;
           Comment=Get Spotify tracks in true FLAC from Tidal/Deezer
           EOF
 
-          # Copy desktop file to usr/share/applications
           cp AppDir/spotiflac.desktop AppDir/usr/share/applications/
 
-          # Use existing icon from build or convert SVG to PNG
+          # Create icon
           if [ -f "build/appicon.png" ]; then
-            # Resize to 256x256 if needed
             convert build/appicon.png -resize 256x256 AppDir/spotiflac.png
           elif [ -f "frontend/public/icon.svg" ]; then
-            # Convert SVG to PNG
             convert -background none -size 256x256 frontend/public/icon.svg AppDir/spotiflac.png
           else
-            # Fallback: create simple icon
-            convert -size 256x256 radial-gradient:#FFD700-#FFA500 AppDir/spotiflac.png
+            echo "Warning: No icon found, building without icon"
           fi
 
-          cp AppDir/spotiflac.png AppDir/usr/share/icons/hicolor/256x256/apps/
-          cp AppDir/spotiflac.png AppDir/.DirIcon
+          # Copy icon if exists
+          if [ -f "AppDir/spotiflac.png" ]; then
+            cp AppDir/spotiflac.png AppDir/usr/share/icons/hicolor/256x256/apps/
+            cp AppDir/spotiflac.png AppDir/.DirIcon
+          fi
 
           # Create AppRun
           cat > AppDir/AppRun << 'EOF'
@@ -283,19 +303,19 @@ jobs:
           HERE=${SELF%/*}
           export PATH="${HERE}/usr/bin/:${PATH}"
           export LD_LIBRARY_PATH="${HERE}/usr/lib/:${LD_LIBRARY_PATH}"
-          exec "${HERE}/usr/bin/spotiflac" "$@"
+          exec "${HERE}/usr/bin/SpotiFLAC" "$@"
           EOF
           chmod +x AppDir/AppRun
 
           # Create AppImage
           mkdir -p dist
-          ARCH=x86_64 ./appimagetool --no-appstream AppDir dist/SpotiFLAC-${{ steps.version.outputs.version }}.AppImage
+          ARCH=x86_64 ./appimagetool --no-appstream AppDir dist/SpotiFLAC.AppImage
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-portable
-          path: dist/SpotiFLAC-${{ steps.version.outputs.version }}.AppImage
+          path: dist/SpotiFLAC.AppImage
           retention-days: 7
 
   create-release:
@@ -334,9 +354,37 @@ jobs:
 
             ## Downloads
 
-            - `SpotiFLAC-${{ steps.version.outputs.version }}.exe` - Windows
-            - `SpotiFLAC-${{ steps.version.outputs.version }}.dmg` - macOS
-            - `SpotiFLAC-${{ steps.version.outputs.version }}.AppImage` - Linux
+            - `SpotiFLAC.exe` - Windows
+            - `SpotiFLAC.dmg` - macOS
+            - `SpotiFLAC.AppImage` - Linux
+
+            <details>
+            <summary><b>Linux Requirements</b></summary>
+
+            The AppImage requires `webkit2gtk-4.1` to be installed on your system:
+
+            **Ubuntu/Debian:**
+            ```bash
+            sudo apt install libwebkit2gtk-4.1-0
+            ```
+
+            **Arch Linux:**
+            ```bash
+            sudo pacman -S webkit2gtk-4.1
+            ```
+
+            **Fedora:**
+            ```bash
+            sudo dnf install webkit2gtk4.1
+            ```
+
+            After installing the dependency, make the AppImage executable:
+            ```bash
+            chmod +x SpotiFLAC.AppImage
+            ./SpotiFLAC.AppImage
+            ```
+
+            </details>
           files: |
             artifacts/windows-portable/*.exe
             artifacts/macos-portable/*.dmg

@@ -19,21 +19,31 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "SpotiFLAC",
-		Width:  1024,
-		Height: 600,
+		Title:     "SpotiFLAC",
+		Width:     1024,
+		Height:    600,
+		MinWidth:  1024,
+		MinHeight: 600,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 255},
 		OnStartup:        app.startup,
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop:     true,
+			DisableWebViewDrop: false,
+			CSSDropProperty:    "--wails-drop-target",
+			CSSDropValue:       "drop",
+		},
 		Bind: []interface{}{
 			app,
 		},
 		Windows: &windows.Options{
-			WebviewIsTransparent: false,
-			WindowIsTranslucent:  false,
-			DisableWindowIcon:    false,
+			WebviewIsTransparent:              false,
+			WindowIsTranslucent:               false,
+			DisableWindowIcon:                 false,
+			DisableFramelessWindowDecorations: false,
 		},
 	})
 

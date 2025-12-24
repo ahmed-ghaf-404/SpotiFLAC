@@ -2,20 +2,17 @@
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "SpotiFLAC",
   "outputfilename": "SpotiFLAC",
-  "frontend:install": "pnpm install && pnpm run generate-icon",
+  "frontend:install": "pnpm install",
+  "frontend:dev:install": "pnpm install",
   "frontend:build": "pnpm run build",
   "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
-    "name": "afkarxyz",
-    "email": "hi@afkarxyz.fun"
+    "name": "afkarxyz"
   },
   "info": {
-    "companyName": "afkarxyz",
     "productName": "SpotiFLAC",
-    "productVersion": "5.6",
-    "copyright": "Copyright © 2025",
-    "comments": "Get Spotify tracks in true FLAC from Tidal/Deezer — no account required."
+    "productVersion": "7.0"
   },
   "wailsjsdir": "./frontend",
   "assetdir": "./frontend/dist",
